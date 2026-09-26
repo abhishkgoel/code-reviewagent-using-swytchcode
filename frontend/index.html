@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevPilot — AI Software Engineer (Swytchcode)</title>
+  <meta name="description" content="Autonomous AI Software Engineer that understands engineering tasks, reasons across Jira/GitHub/Slack, and executes controlled software development workflows.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="dark-theme">
+  <div class="background-glow top-left"></div>
+  <div class="background-glow bottom-right"></div>
+
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="top-nav glass-card">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="logo-icon">⚡</span>
+        </div>
+        <div class="brand-info">
+          <h1>DevPilot <span class="badge-beta">AI SWE</span></h1>
+          <p class="subtitle">Autonomous Software Engineering Agent • Powered by Swytchcode</p>
+        </div>
+      </div>
+
+      <div class="system-status">
+        <!-- Live vs Sandbox Mode Toggle -->
+        <div class="mode-toggle-group">
+          <button id="btnModeLive" class="mode-btn" title="Execute against live GitHub, Jira, Slack accounts via Swytchcode">⚡ Live APIs</button>
+          <button id="btnModeSandbox" class="mode-btn active" title="Run in self-contained sandbox mode with deterministic demo state">🧪 Sandbox</button>
+        </div>
+
+        <button id="btnOpenJudgeModal" class="btn-judge-verify" title="Open API proof & verification panel for judges">
+          <span>⚖️ Judge Proof Panel</span>
+        </button>
+
+        <div class="status-chip" title="Swytchcode Kernel">
+          <span class="pulse-dot active"></span>
+          <span class="chip-label">Swytchcode</span>
+          <span class="chip-val">Kernel Active</span>
+        </div>
+        <div class="status-chip" title="GitHub Integration">
+          <span class="status-icon">🐙</span>
+          <span class="chip-label">GitHub</span>
+          <span class="chip-val" id="ghStatus">Ready</span>
+        </div>
+        <div class="status-chip" title="Jira Integration">
+          <span class="status-icon">🔷</span>
+          <span class="chip-label">Jira</span>
+          <span class="chip-val" id="jiraStatus">Ready</span>
+        </div>
+        <div class="status-chip" title="Slack Integration">
+          <span class="status-icon">💬</span>
+          <span class="chip-label">Slack</span>
+          <span class="chip-val" id="slackStatus">#dev-alerts</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Judge Verification & API Proof Modal -->
+    <div id="judgeModal" class="modal-overlay hidden">
+      <div class="glass-card modal-container">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span class="modal-icon">⚖️</span>
+            <div>
+              <h3>API Integration &amp; SwytchCode Proof Panel</h3>
+              <p>Verify live API connections, OAuth accounts, and kernel network audit logs.</p>
+            </div>
+          </div>
+          <button id="btnCloseJudgeModal" class="btn-close-modal">✕</button>
+        </div>
+
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="tab-test">Live API Tester</button>
+          <button class="modal-tab" data-tab="tab-network">SwytchCode Network Audit</button>
+          <button class="modal-tab" data-tab="tab-setup">Live OAuth Setup Guide</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Tab 1: Live API Tester -->
+          <div id="tab-test" class="tab-pane active">
+            <p class="tab-desc">Trigger real live tool calls through the SwytchCode kernel (<code>swy exec</code>) and inspect stdout/stderr.</p>
+            <div class="test-providers-grid">
+              <div class="provider-test-card">
+                <div class="ptc-header">
+                  <span>🐙 GitHub</span>
+                  <span class="ptc-tool">github.repo.get3</span>
+                </div>
+                <button class="btn-run-live-test" data-provider="github">Test GitHub Live</button>
+              </div>
+
+              <div class="provider-test-card">
+                <div class="ptc-header">
+                  <span>🔷 Jira</span>
+                  <span class="ptc-tool">jira.api.issue.get</span>
+                </div>
+                <button class="btn-run-live-test" data-provider="jira">Test Jira Live</button>
+              </div>
+
+              <div class="provider-test-card">
+                <div class="ptc-header">
+                  <span>💬 Slack</span>
+                  <span class="ptc-tool">slack.chat.postmessage.create</span>
+                </div>
+                <button class="btn-run-live-test" data-provider="slack">Test Slack Live</button>
+              </div>
+            </div>
+
+            <div class="test-result-box">
+              <div class="trb-header">
+                <span id="testResultTitle">Execution Output (swy exec)</span>
+                <span id="testResultStatus" class="trb-badge">Idle</span>
+              </div>
+              <pre id="testResultLog" class="terminal-log modal-log">// Click a "Test Live" button above to execute a real SwytchCode tool...</pre>
+            </div>
+          </div>
+
+          <!-- Tab 2: SwytchCode Network Audit -->
+          <div id="tab-network" class="tab-pane">
+            <p class="tab-desc">This data is read directly from the native SwytchCode CLI audit store (<code>swy audit network</code> and <code>swy audit stats</code>).</p>
+            <div class="audit-split">
+              <div>
+                <div class="sec-label">Kernel Outbound Network Activity (<code>swy audit network</code>):</div>
+                <pre id="netAuditContent" class="terminal-log modal-log">Loading network activity...</pre>
+              </div>
+              <div>
+                <div class="sec-label">Execution Stats &amp; Reliability (<code>swy audit stats</code>):</div>
+                <pre id="statsAuditContent" class="terminal-log modal-log">Loading execution stats...</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Setup Guide -->
+          <div id="tab-setup" class="tab-pane">
+            <div class="setup-guide-box">
+              <h4>How to connect your real accounts in 60 seconds:</h4>
+              <p>SwytchCode manages OAuth tokens securely in your local environment. Run these in your terminal:</p>
+              <div class="code-step">
+                <span>1. Connect GitHub (OAuth in browser):</span>
+                <code>swy auth connect github</code>
+              </div>
+              <div class="code-step">
+                <span>2. Connect Jira:</span>
+                <code>swy auth connect jira</code>
+              </div>
+              <div class="code-step">
+                <span>3. Connect Slack:</span>
+                <code>swy auth connect slack</code>
+              </div>
+              <div class="code-step">
+                <span>4. Verify connected state:</span>
+                <code>swy auth status</code>
+              </div>
+              <p class="setup-note">💡 Alternatively, add <code>GITHUB_TOKEN</code>, <code>JIRA_API_TOKEN</code>, and <code>SLACK_BOT_TOKEN</code> to your <code>.env</code> file.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-container">
+      
+      <!-- Left Column: Command Center & Active Task -->
+      <section class="left-panel">
+        
+        <!-- Command Prompt Card -->
+        <div class="glass-card prompt-card">
+          <div class="card-header">
+            <span class="card-icon">🎯</span>
+            <h2>Task Command Center</h2>
+          </div>
+          <p class="card-desc">Issue natural-language software engineering requests to DevPilot.</p>
+
+          <form id="commandForm" class="command-form">
+            <div class="input-wrapper">
+              <span class="prompt-symbol">&gt;</span>
+              <input type="text" id="commandInput" placeholder="e.g. Fix AICV-1432" autocomplete="off" required>
+              <button type="submit" id="btnSubmit" class="btn-primary">
+                <span>Run with DevPilot</span>
+                <span class="btn-arrow">→</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="quick-commands">
+            <span class="quick-label">Demo Commands:</span>
+            <div class="command-chips">
+              <button class="cmd-chip" data-cmd="Fix AICV-1432">
+                <span class="chip-emoji">🚀</span> Fix AICV-1432 (End-to-End)
+              </button>
+              <button class="cmd-chip" data-cmd="Investigate AICV-1432 and tell me what is causing the issue.">
+                <span class="chip-emoji">🔍</span> Investigate Issue
+              </button>
+              <button class="cmd-chip" data-cmd="Create an implementation plan for AICV-1432.">
+                <span class="chip-emoji">📋</span> Generate Plan
+              </button>
+              <button class="cmd-chip" data-cmd="Why is PR #218 failing?">
+                <span class="chip-emoji">🐛</span> Debug PR #218
+              </button>
+              <button class="cmd-chip" data-cmd="Why is AICV-1432 blocked?">
+                <span class="chip-emoji">🚫</span> Blocker Analysis
+              </button>
+              <button class="cmd-chip" data-cmd="Give me today's engineering summary.">
+                <span class="chip-emoji">📊</span> Daily Summary
+              </button>
+              <button class="cmd-chip" data-cmd="@DevPilot create a Jira ticket from this conversation.">
+                <span class="chip-emoji">💬</span> Slack → Jira Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Human Approval Gate Card (Visible when WAITING_FOR_APPROVAL) -->
+        <div id="approvalCard" class="glass-card approval-gate hidden">
+          <div class="approval-header">
+            <div class="approval-title">
+              <span class="shield-icon">🛡️</span>
+              <div>
+                <h3>Human Approval Gate Required</h3>
+                <p>DevPilot proposed repository changes for <strong id="approvalIssueKey">AICV-1432</strong>.</p>
+              </div>
+            </div>
+            <span class="gate-badge">Awaiting Authorization</span>
+          </div>
+
+          <div class="approval-body">
+            <div class="meta-row">
+              <div class="meta-item">
+                <span class="meta-label">Target Repository</span>
+                <span class="meta-val" id="approvalRepo">acme-corp/ai-inference-service</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Dedicated Branch</span>
+                <span class="meta-val code-font" id="approvalBranch">feat/aicv-1432-consecutive-frame-blur</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Affected Files</span>
+                <span class="meta-val code-font" id="approvalFiles">inference/blur_detection.py</span>
+              </div>
+            </div>
+
+            <div class="plan-summary-box">
+              <h4>Proposed Implementation Steps:</h4>
+              <ul id="approvalStepsList"></ul>
+            </div>
+
+            <div class="diff-preview-box">
+              <div class="diff-header">
+                <span>Proposed Unified Diff</span>
+                <span class="diff-file-tag">inference/blur_detection.py</span>
+              </div>
+              <pre id="approvalDiffContent" class="diff-code"></pre>
+            </div>
+
+            <div class="approval-actions">
+              <button id="btnApprove" class="btn-approve">
+                <span>✓ Approve &amp; Execute Fix</span>
+              </button>
+              <button id="btnReject" class="btn-reject">
+                <span>✕ Reject &amp; Stop</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Task Execution Details Card -->
+        <div id="taskCard" class="glass-card task-card">
+          <div class="card-header task-header">
+            <div class="task-title-group">
+              <span class="card-icon">🤖</span>
+              <div>
+                <h2 id="taskUserRequest">Ready for task</h2>
+                <div class="task-submeta">
+                  <span id="taskIdLabel" class="task-id">Task ID: --</span>
+                  <span id="taskStatusBadge" class="status-badge received">STANDBY</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Execution Timeline -->
+          <div class="timeline-container">
+            <div class="section-heading">Execution Timeline</div>
+            <div id="timelineList" class="timeline-items">
+              <div class="empty-state">No active task. Select a demo command above to start.</div>
+            </div>
+          </div>
+
+          <!-- Analysis / Diagnosis Output -->
+          <div id="analysisSection" class="analysis-box hidden">
+            <div class="section-heading">Root Cause Diagnosis / Response</div>
+            <div id="analysisContent" class="markdown-output"></div>
+          </div>
+
+          <!-- Downstream Artifacts Grid (PR, Test Results, Jira, Slack) -->
+          <div id="artifactsGrid" class="artifacts-grid hidden">
+            
+            <!-- PR Card -->
+            <div id="prArtifact" class="artifact-card pr-card hidden">
+              <div class="artifact-header">
+                <span class="art-icon">🔀</span>
+                <h4>Pull Request Created</h4>
+              </div>
+              <div class="artifact-body">
+                <a id="prLink" href="#" target="_blank" class="pr-title-link">PR #219: Fix consecutive-frame blur detection</a>
+                <div class="pr-meta">
+                  <span class="code-font" id="prBranchName">feat/aicv-1432</span>
+                  <span class="badge-success">Open &amp; Ready for Review</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Test Results Card -->
+            <div id="testArtifact" class="artifact-card test-card hidden">
+              <div class="artifact-header">
+                <span class="art-icon">🧪</span>
+                <h4>Automated Test Suite</h4>
+              </div>
+              <div class="artifact-body">
+                <div class="test-status-line">
+                  <span class="badge-success" id="testOutcomeBadge">PASS</span>
+                  <span class="test-summary-text" id="testSummaryText">Ran 5 tests in 0.001s</span>
+                </div>
+                <pre id="testOutputLog" class="terminal-log"></pre>
+              </div>
+            </div>
+
+            <!-- Jira Update Card -->
+            <div id="jiraArtifact" class="artifact-card jira-card hidden">
+              <div class="artifact-header">
+                <span class="art-icon">🔷</span>
+                <h4>Jira Ticket Updated</h4>
+              </div>
+              <div class="artifact-body">
+                <p id="jiraTicketText">Issue <strong id="jiraIssueLink">AICV-1432</strong> updated with test results and PR link.</p>
+              </div>
+            </div>
+
+            <!-- Slack Notification Card -->
+            <div id="slackArtifact" class="artifact-card slack-card hidden">
+              <div class="artifact-header">
+                <span class="art-icon">💬</span>
+                <h4>Slack Team Notification</h4>
+              </div>
+              <div class="artifact-body slack-preview">
+                <div class="slack-msg-header">
+                  <span class="bot-name">DevPilot BOT</span>
+                  <span class="bot-time">Just now</span>
+                </div>
+                <div id="slackMsgContent" class="slack-text"></div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- Right Column: Audit Trail & Swytchcode Kernel Log -->
+      <aside class="right-panel">
+        
+        <!-- Live Audit Trail Card -->
+        <div class="glass-card audit-card">
+          <div class="card-header">
+            <span class="card-icon">📜</span>
+            <div class="audit-title-wrap">
+              <h3>Swytchcode Audit Trail</h3>
+              <span class="audit-count-badge" id="auditCount">0 actions</span>
+            </div>
+            <button id="btnRefreshAudit" class="btn-icon" title="Refresh Audit Log">🔄</button>
+          </div>
+          <p class="card-desc">Immutable record of every API tool call and guardrail verification (Spec Section 19).</p>
+
+          <div id="auditList" class="audit-feed">
+            <div class="empty-state">No actions executed yet.</div>
+          </div>
+        </div>
+
+        <!-- System Architecture Info Card -->
+        <div class="glass-card info-card">
+          <div class="card-header">
+            <span class="card-icon">🏗️</span>
+            <h3>Architecture Pipeline</h3>
+          </div>
+          <div class="arch-flow">
+            <div class="flow-step">
+              <div class="flow-dot">1</div>
+              <span>Understand Request</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">2</div>
+              <span>Jira &amp; GitHub Inspection</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">3</div>
+              <span>Root Cause Diagnosis</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step guardrail">
+              <div class="flow-dot">🛡️</div>
+              <span>Human Approval Gate</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">4</div>
+              <span>Dedicated Branch Fix</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">5</div>
+              <span>Run Automated Tests</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">6</div>
+              <span>Create PR &amp; Update Jira</span>
+            </div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-step">
+              <div class="flow-dot">7</div>
+              <span>Post to Slack</span>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

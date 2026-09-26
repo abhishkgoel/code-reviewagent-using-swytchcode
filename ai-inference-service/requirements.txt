@@ -1,0 +1,2 @@
+# ai-inference-service dependencies
+# Uses standard library for portable, zero-overhead test execution

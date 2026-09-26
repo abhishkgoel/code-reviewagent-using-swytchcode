@@ -1,0 +1,14 @@
+{
+  "service_name": "ai-inference-service",
+  "version": "1.4.0",
+  "blur_detection": {
+    "confidence_threshold": 0.45,
+    "consecutive_frame_threshold": 3,
+    "laplacian_var_threshold": 100.0,
+    "enable_laplacian_fallback": true
+  },
+  "tracker": {
+    "max_disappeared": 5,
+    "iou_threshold": 0.5
+  }
+}
